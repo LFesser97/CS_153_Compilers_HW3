@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>1. HW3: LLVMlite &#8212; CS 1530 2025</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=4f649999" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=039e1c02" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=3dba9716" />
+    <script src="_static/documentation_options.js?v=cb975c41"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="2. LLVMlite Documentation" href="llvmlite.html" />
+    <link rel="prev" title="&lt;no title&gt;" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="hw3-llvmlite">
+<span id="id1"></span><h1><span class="section-number">1. </span>HW3: LLVMlite<a class="headerlink" href="#hw3-llvmlite" title="Link to this heading">¶</a></h1>
+<section id="overview">
+<h2><span class="section-number">1.1. </span>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
+<p>In this project you will implement a non-optimizing compiler for
+subset of the LLVM IR language.  The source language consists of a
+64-bit, simplified subset of the LLVM IR that we call LLVMlite.  The
+target language is the X86lite documentation you received for HW2.</p>
+</section>
+<section id="getting-started">
+<h2><span class="section-number">1.2. </span>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading">¶</a></h2>
+<p>The files included are briefly described
+below. Those marked with <code class="docutils literal notranslate"><span class="pre">*</span></code> are the only ones you should need to
+modify while completing this assignment.</p>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p>README</p></td>
+<td><p>help about the main test harness</p></td>
+</tr>
+<tr class="row-even"><td><p>Makefile</p></td>
+<td><p>builds <code class="docutils literal notranslate"><span class="pre">oatc</span></code>, also supports targets <code class="docutils literal notranslate"><span class="pre">dev</span></code>, <code class="docutils literal notranslate"><span class="pre">test</span></code>, and <code class="docutils literal notranslate"><span class="pre">zip</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>lib/util/assert.ml(i)</p></td>
+<td><p>the assertion framework</p></td>
+</tr>
+<tr class="row-even"><td><p>lib/util/platform.ml</p></td>
+<td><p>OS platform-specific compilation support</p></td>
+</tr>
+<tr class="row-odd"><td><p>lib/x86/x86.ml</p></td>
+<td><p>the X86lite instruction representation</p></td>
+</tr>
+<tr class="row-even"><td><p>lib/ll/ll.ml</p></td>
+<td><p>the abstract syntax for LLVMlite</p></td>
+</tr>
+<tr class="row-odd"><td><p>lib/ll/lllexer.mll</p></td>
+<td><p>lexer for LLVMlite syntax</p></td>
+</tr>
+<tr class="row-even"><td><p>lib/ll/llparser.mly</p></td>
+<td><p>parser generator for LLVMlite syntax</p></td>
+</tr>
+<tr class="row-odd"><td><p>lib/ll/llinterp.ml</p></td>
+<td><p>reference interpreter for the LLVMlite semantics</p></td>
+</tr>
+<tr class="row-even"><td><p>llprograms/*.ll</p></td>
+<td><p>example .ll programs used in testing</p></td>
+</tr>
+<tr class="row-odd"><td><p>test/gradedtests.ml</p></td>
+<td><p>graded test cases that we provide</p></td>
+</tr>
+<tr class="row-even"><td><p>bin/main.ml</p></td>
+<td><p>command-line interface</p></td>
+</tr>
+<tr class="row-odd"><td><p>bin/driver.ml</p></td>
+<td><p>invoking the compiler pipeline</p></td>
+</tr>
+<tr class="row-even"><td><p>bin/cinterop.c</p></td>
+<td><p>c code for testing interoperability</p></td>
+</tr>
+<tr class="row-odd"><td><p>bin/backend.ml</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">*</span></code> where you implement the LLVMlite to X86 compiler</p></td>
+</tr>
+<tr class="row-even"><td><p>test/studenttests.ml</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">*</span></code> where your own, private test cases should go (no need to submit them)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition-note-re-development-environment admonition">
+<p class="admonition-title">Note re Development Environment</p>
+<p>If you are using the provided development environment AND running on an
+ARM-based machine, you might encounter some errors when running
+the test harness. If this happens, you can try modifying the
+file <code class="docutils literal notranslate"><span class="pre">.devcontainer/Dockerfile</span></code> to change the first line from
+<code class="docutils literal notranslate"><span class="pre">FROM</span> <span class="pre">ubuntu:20.04</span></code> to <code class="docutils literal notranslate"><span class="pre">FROM</span> <span class="pre">--platform=linux/amd64</span> <span class="pre">ubuntu:20.04</span></code>.
+If it still doesn’t work, please post on <a class="reference external" href="https://edstem.org/us/courses/80540/discussion">Ed</a>.</p>
+<p>If you are configuring your own environment, you need to have <a class="reference external" href="http://gallium.inria.fr/~fpottier/menhir/">menhir</a> and <a class="reference external" href="https://clang.llvm.org/">clang</a> installed on your system for this
+assignment.  If you need help installing these tools, please ask on <a class="reference external" href="https://edstem.org/us/courses/80540/discussion">Ed</a>.</p>
+</div>
+</section>
+<section id="preliminary-steps">
+<h2><span class="section-number">1.3. </span>Preliminary Steps<a class="headerlink" href="#preliminary-steps" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>Skim through the rest of this document to get a sense of what this project entails.</p></li>
+<li><p>Familiarize yourself with the information in the <code class="docutils literal notranslate"><span class="pre">README</span></code>, which
+explains the ways that you can run your compiler for testing
+purposes.</p></li>
+<li><p>Then take a look at <code class="docutils literal notranslate"><span class="pre">driver.ml</span></code>, particularly the code related to
+<code class="docutils literal notranslate"><span class="pre">process_ll_file</span></code> to see how the backend code fits into the
+overall compilation pipeline.</p></li>
+<li><p>Then start working through <code class="docutils literal notranslate"><span class="pre">backend.ml</span></code>, following the
+instructions below.</p></li>
+</ol>
+<div class="admonition-warning admonition">
+<p class="admonition-title">Warning</p>
+<p><strong>This project is potentially very difficult to debug and
+may take you a while to understand.  GET STARTED EARLY!</strong></p>
+</div>
+</section>
+<section id="llvm-lite-specification">
+<h2><span class="section-number">1.4. </span>LLVM Lite Specification<a class="headerlink" href="#llvm-lite-specification" title="Link to this heading">¶</a></h2>
+<p>The source language for this ‘backend’ part of the full compiler is a
+subset of the LLVM IR called LLVM Lite.  You may find the <a class="reference external" href="http://llvm.org/docs/LangRef.html">Language
+Reference</a> to be a useful
+resource for this project, though we are only concerned with a small
+portion of the full LLVM feature set.</p>
+<p>The <a class="reference internal" href="llvmlite.html#llvmlite"><span class="std std-ref">LLVMlite Documentation</span></a> describes the behavior of
+LLVM programs in terms of an abstract semantics that is not target
+specific.  This semantics is intended to be faithful to the LLVM
+Language Reference.</p>
+</section>
+<section id="implementing-the-compiler">
+<h2><span class="section-number">1.5. </span>Implementing the Compiler<a class="headerlink" href="#implementing-the-compiler" title="Link to this heading">¶</a></h2>
+<p>The code we provide in <code class="docutils literal notranslate"><span class="pre">backend.ml</span></code> is a minimal skeleton of the
+basic structure of the compiler.  To a first approximation, for each
+part <code class="docutils literal notranslate"><span class="pre">foo</span></code> of the abstract syntax (such as <code class="docutils literal notranslate"><span class="pre">prog</span></code> or <code class="docutils literal notranslate"><span class="pre">fdecl</span></code>),
+there is a corresponding <code class="docutils literal notranslate"><span class="pre">compile_foo</span></code> function
+(i.e. <code class="docutils literal notranslate"><span class="pre">compile_prog</span></code> or <code class="docutils literal notranslate"><span class="pre">compile_fdecl</span></code>).  Most of these
+definitions have been left unimplemented (and a few have been left
+out).  Your job is to complete this translation.  Our reference
+solution is well under 350 lines of documented code, so if your
+implementation is significantly longer than this, you may wish to
+rethink your approach or seek help.</p>
+<p>The file <code class="docutils literal notranslate"><span class="pre">backend.ml</span></code> contains additional hints and explanations
+about the compilation strategy that we suggest you use.</p>
+<p>We suggest that you stage the development of your compiler like this:</p>
+<ol class="arabic">
+<li><p>First get a minimal implementation of <code class="docutils literal notranslate"><span class="pre">compile_fdecl</span></code> working so
+that you can compile functions with empty bodies but varying
+numbers of input parameters.  To do this, you’ll need to understand
+the System V AMD64 ABI calling conventions (see the lecture slides
+and <a class="reference external" href="http://en.wikipedia.org/wiki/X86_calling_conventions">Wikipedia</a> for an
+explanation), then understand the notion of a <code class="docutils literal notranslate"><span class="pre">layout</span></code> and
+complete the <code class="docutils literal notranslate"><span class="pre">arg_loc</span></code> function.  At this point, the X86 code you
+generate won’t be able to run because the code for the compiled
+function does not exit properly. (But you can still look at the
+generated assembly code to see whether it looks reasonable.)</p></li>
+<li><p>Next implement enough of the <code class="docutils literal notranslate"><span class="pre">compile_terminator</span></code> function to
+handle (void) functions that return no results.  Similarly,
+implement enough of <code class="docutils literal notranslate"><span class="pre">compile_block</span></code> to handle blocks with no
+instructions.  At this point, your compiler should be able to
+generate working code for an LLVM function like that found in
+<code class="docutils literal notranslate"><span class="pre">returnvoid.ll</span></code>:</p>
+<div class="highlight-llvm notranslate"><div class="highlight"><pre><span></span><span class="k">define</span><span class="w"> </span><span class="k">void</span><span class="w"> </span><span class="vg">@main</span><span class="p">(</span><span class="kt">i64</span><span class="w"> </span><span class="nv">%argc</span><span class="p">,</span><span class="w"> </span><span class="kt">i8</span><span class="p">**</span><span class="w"> </span><span class="nv">%argv</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">ret</span><span class="w"> </span><span class="k">void</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>(<em>Note:</em> this isn’t part of the test suite, since the value “returned”
+to the shell when this program runs isn’t well defined.)</p>
+</li>
+<li><p>Understand the notion of the <code class="docutils literal notranslate"><span class="pre">ctxt</span></code> type and develop a strategy
+for storing <code class="docutils literal notranslate"><span class="pre">uid</span></code> locals.  See the comments in the <code class="docutils literal notranslate"><span class="pre">backend.ml</span></code>
+file. Implement the <code class="docutils literal notranslate"><span class="pre">compile_operand</span></code> function.</p></li>
+<li><p>Implement the <code class="docutils literal notranslate"><span class="pre">Binop</span></code> case for <code class="docutils literal notranslate"><span class="pre">compile_insn</span></code> (which, if you
+follow the suggested method of compiling locals, will use
+<code class="docutils literal notranslate"><span class="pre">compile_operand</span></code>).</p></li>
+<li><p>At this point, you probably want to revisit <code class="docutils literal notranslate"><span class="pre">compile_fdecl</span></code> and
+<code class="docutils literal notranslate"><span class="pre">compile_block</span></code> to adjust them to deal properly with contexts and
+non-empty control-flow graphs / blocks.</p></li>
+<li><p>Next go back and implement the rest of the cases for
+<code class="docutils literal notranslate"><span class="pre">compile_terminator</span></code>.  At this point, your compiler should be
+able to handle functions that return <code class="docutils literal notranslate"><span class="pre">i64</span></code> values and that
+contain simple arithmetic and direct jumps.</p></li>
+<li><p>Implement the translation of <code class="docutils literal notranslate"><span class="pre">Icmp</span></code> in <code class="docutils literal notranslate"><span class="pre">compile_insn</span></code>, followed
+by <code class="docutils literal notranslate"><span class="pre">Alloca</span></code>, <code class="docutils literal notranslate"><span class="pre">Load</span></code>, and <code class="docutils literal notranslate"><span class="pre">Store</span></code>.</p></li>
+<li><p>Next tackle the <code class="docutils literal notranslate"><span class="pre">Call</span></code> instruction.  The code you generate must
+properly handle the System V AMD64 ABI calling conventions (but
+note that we care only about 64-bit sized values).  After successfully
+completing this step, your compiler should be able to handle the
+recursive factorial function definition.</p></li>
+<li><p>Breathe a sigh of relief at how easy it is to implement
+<code class="docutils literal notranslate"><span class="pre">Bitcast</span></code>, because the target language is untyped.</p></li>
+<li><p>Finally, gather your courage, and implement the <code class="docutils literal notranslate"><span class="pre">Gep</span></code>
+(<code class="docutils literal notranslate"><span class="pre">getelementptr</span></code>) instruction.</p></li>
+</ol>
+</section>
+<section id="testing-and-debugging-strategies">
+<h2><span class="section-number">1.6. </span>Testing and Debugging Strategies<a class="headerlink" href="#testing-and-debugging-strategies" title="Link to this heading">¶</a></h2>
+<p>Testing and debugging a compiler is quite difficult.  There are many
+correct potential translations of a given source program, and there
+are many incidental changes (such as the choice of label names) that
+do not affect the semantics of the generated code.  It is also
+difficult to test parts of the translation independently, since simple
+inputs may depend on almost all of the compilation pipeline.</p>
+<p>The test provided harness several ways to assess your code. The basic use is
+<code class="docutils literal notranslate"><span class="pre">./oatc</span> <span class="pre">--test</span></code> which runs the test suite tests.  Note that you can also run
+<code class="docutils literal notranslate"><span class="pre">oatc</span></code> manually and that it generates useful debugging information in the
+<code class="docutils literal notranslate"><span class="pre">output</span></code> directory. (Since it never erases this debugging output, you may want
+to periodically remove the <code class="docutils literal notranslate"><span class="pre">output</span></code> directory to clean up.)</p>
+<p>You may find it helpful to run the LLVMlite code using our reference
+interpreter (with the <code class="docutils literal notranslate"><span class="pre">--interpret-ll</span></code> flag).</p>
+<p>You may also find it helpful to run the LLVMlite code by compiling it
+via clang (with the <code class="docutils literal notranslate"><span class="pre">--clang</span></code> flag).</p>
+<p>See the <code class="docutils literal notranslate"><span class="pre">README</span></code> file for a full description of the <code class="docutils literal notranslate"><span class="pre">oatc</span></code> flags.</p>
+<p>Note that it is not very useful to directly compare the <code class="docutils literal notranslate"><span class="pre">.s</span></code> files
+produced by your compiler to those produced by clang, but the
+<em>behavior</em> of the two versions for the same inputs should be the same.</p>
+<p>We have provided a (minimally-featured) parser for LLVMlite code.  It
+is sufficiently complete to parse the examples in the <code class="docutils literal notranslate"><span class="pre">llprograms</span></code>
+directory, and we expect you to create additional test cases
+yourself. For examples of how to use the test driver infrastructure,
+see the <code class="docutils literal notranslate"><span class="pre">gradedtests.ml</span></code> file. (Those examples will also be useful
+as a model for your submitted public Graded Test case.)</p>
+</section>
+<section id="graded-test-case">
+<h2><span class="section-number">1.7. </span>Graded Test Case<a class="headerlink" href="#graded-test-case" title="Link to this heading">¶</a></h2>
+<p>As part of this project, you must post an interesting test case for
+the compiler to <a class="reference external" href="https://edstem.org/us/courses/80540/discussion">Ed</a>.  This test case might take the form of a
+<code class="docutils literal notranslate"><span class="pre">.ll</span></code> file along with expected outputs (as in our automated tests),
+or it might start from hand-generated LLVMlite abstract syntax.</p>
+<p><em>The test case you submit to</em> Ed <em>will not count if it is too
+similar to previously-posted tests!</em> Your test should be distinct from
+prior test cases.  (Note that this policy encourages you to submit
+test cases early!)  Tests that stress parts of the language that
+aren’t well exercised by the provided tests are particularly
+encouraged.</p>
+<p>Your test case should satisfy the following criteria:</p>
+<ul class="simple">
+<li><p>It should use a structured data type such as an array or struct (and so also use <code class="docutils literal notranslate"><span class="pre">getelementptr</span></code>)</p></li>
+<li><p>It should involve some non-trivial control flow within a single control flow graph (i.e. loops and conditionals)</p></li>
+<li><p>It should have at least one helper function (so it should also use the <code class="docutils literal notranslate"><span class="pre">call</span></code> instruction)</p></li>
+</ul>
+<p>Otherwise, it’s free to use any of the LLVMlite arithmetic/bit manipulation functions, so feel free to be creative!</p>
+<div class="admonition-note admonition">
+<p class="admonition-title">Note</p>
+<p>You can compile your .ll file with clang (i.e. <code class="docutils literal notranslate"><span class="pre">clang</span> <span class="pre">-S</span> <span class="pre">foo.ll</span></code>) to check
+whether it is legal LLVM IR code, which is useful because the backend assumes
+that the code is legal.  This is a good way to check that your code is valid,
+but note that the assembly generated by clang will be incomparable to your
+backend’s output.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><strong>You must submit your public test case 24 hours in advance of
+the project deadline.</strong>  This will give everyone time to try
+out those test cases.</p>
+</div>
+<p>As part of this project, you must post an interesting test case for the compiler
+to <a class="reference external" href="https://edstem.org/us/courses/80540/discussion">Ed</a>. This test case must take the form of a valid <code class="docutils literal notranslate"><span class="pre">.ll</span></code> file along with
+test cases providing expected input arguments and outputs.
+We will post an example test so you can see the format.</p>
+<p>To <em>use</em> the other student’s test cases, you should copy the files into your locals
+<code class="docutils literal notranslate"><span class="pre">llprograms</span></code> directory, and add the test cases to your <code class="docutils literal notranslate"><span class="pre">studenttests.ml</span></code> file.</p>
+<p>We will validate these tests against our own implementation of the
+compiler (and clang).  A second component of your grade will be
+determined by how your compiler fares against the test cases submitted
+by the other groups in the class.</p>
+</section>
+<section id="grading">
+<h2><span class="section-number">1.8. </span>Grading<a class="headerlink" href="#grading" title="Link to this heading">¶</a></h2>
+<p><strong>Projects that do not compile will receive no credit!</strong></p>
+<p>Your grade for this project will be based on:</p>
+<ul class="simple">
+<li><p>90 Points: the various automated tests that we provide.  (Some
+reserved for online grading.)</p></li>
+<li><p>5 Points for posting an interesting test case to Ed.  (Graded
+manually.)</p></li>
+<li><p>5 Points divided among the test cases created by other
+groups. (Graded automatically, but only after the test
+cases have been manually vetted.)</p></li>
+</ul>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">1. HW3: LLVMlite</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">1.1. Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#getting-started">1.2. Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#preliminary-steps">1.3. Preliminary Steps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#llvm-lite-specification">1.4. LLVM Lite Specification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#implementing-the-compiler">1.5. Implementing the Compiler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#testing-and-debugging-strategies">1.6. Testing and Debugging Strategies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#graded-test-case">1.7. Graded Test Case</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#grading">1.8. Grading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="llvmlite.html">2. LLVMlite Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
